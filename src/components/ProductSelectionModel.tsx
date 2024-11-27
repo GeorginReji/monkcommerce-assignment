@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
 	Modal,
 	Checkbox,
@@ -48,9 +48,14 @@ const ProductSelectionModal: React.FC<ProductSelectionModalProps> = ({
 	productModelVisible,
 	setProductModelVisible,
 }) => {
-	// const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
 	const [products, setProducts] = useState<Product[]>([]);
-	const [isLoading, setIsLoading] = useState<boolean>(false);
+	const [page, setPage] = useState(1);
+	const [hasMore, setHasMore] = useState(true);
+	const [isLoading, setIsLoading] = useState(false);
+
+	// Ref for the last product element
+	const lastProductElementRef = useRef<HTMLDivElement>(null);
+
 	const handleProductCheckChange = (
 		productIndex: number,
 		checked: boolean
@@ -114,13 +119,26 @@ const ProductSelectionModal: React.FC<ProductSelectionModalProps> = ({
 	// };
 	useEffect(() => {
 		if (productModelVisible) {
-			console.log('useEffect triggered');
-
+			if (!hasMore || isLoading) return;
 			const fetchProductData = async () => {
 				try {
 					setIsLoading(true);
-					const productData: Product[] = await getProductsData({});
-					setProducts(productData);
+					const productData = await getProductsData({
+						page,
+						limit: 10,
+					});
+
+					// If new data is less than limit, we've reached the end
+					if (productData.length < 10) {
+						setHasMore(false);
+					}
+
+					// Append new products to existing list
+					setProducts((prevProducts) =>
+						page === 1
+							? productData
+							: [...prevProducts, ...productData]
+					);
 				} catch (error) {
 					console.error('Error fetching product data:', error);
 				} finally {
@@ -129,7 +147,39 @@ const ProductSelectionModal: React.FC<ProductSelectionModalProps> = ({
 			};
 			fetchProductData();
 		}
-	}, [productModelVisible]);
+	}, [productModelVisible, page]);
+
+	// Intersection Observer setup
+	useEffect(() => {
+		if (!productModelVisible || !hasMore || isLoading) return;
+
+		const observer = new IntersectionObserver(
+			(entries) => {
+				// If the last element is intersecting, load more products
+				if (entries[0].isIntersecting && hasMore && !isLoading) {
+					setPage((prevPage) => prevPage + 1);
+				}
+			},
+			{
+				// Optional configuration
+				root: null, // viewport
+				rootMargin: '0px',
+				threshold: 1.0, // fully visible
+			}
+		);
+
+		// Observe the last product element
+		if (lastProductElementRef.current) {
+			observer.observe(lastProductElementRef.current);
+		}
+
+		// Cleanup
+		return () => {
+			if (lastProductElementRef.current) {
+				observer.unobserve(lastProductElementRef.current);
+			}
+		};
+	}, [products, hasMore, isLoading, productModelVisible]);
 
 	return (
 		<Modal
@@ -142,15 +192,7 @@ const ProductSelectionModal: React.FC<ProductSelectionModalProps> = ({
 					startDecorator={<Search />}
 					placeholder="Search product"
 				/>
-				{isLoading ? (
-					<Stack
-						display="flex"
-						justifyContent="center"
-						alignItems="center"
-					>
-						<CircularProgress />
-					</Stack>
-				) : (
+				{
 					<Sheet
 						sx={{
 							maxWidth: 800,
@@ -163,7 +205,15 @@ const ProductSelectionModal: React.FC<ProductSelectionModalProps> = ({
 						<Grid container spacing={2}>
 							{products.map(
 								(product: Product, productIndex: number) => (
-									<Grid xs={12} key={product.id}>
+									<Grid
+										xs={12}
+										key={product.id}
+										ref={
+											productIndex === products.length - 1
+												? lastProductElementRef
+												: null
+										}
+									>
 										<Grid
 											display="flex"
 											direction="row"
@@ -262,6 +312,17 @@ const ProductSelectionModal: React.FC<ProductSelectionModalProps> = ({
 							)}
 						</Grid>
 					</Sheet>
+				}
+				{isLoading && (
+					<Grid xs={12} display="flex" justifyContent="center" py={2}>
+						<CircularProgress />
+					</Grid>
+				)}
+
+				{!hasMore && (
+					<Grid xs={12} display="flex" justifyContent="center" py={2}>
+						<Typography>No more products</Typography>
+					</Grid>
 				)}
 				<Box
 					sx={{
