@@ -10,31 +10,51 @@ import {
 	Option,
 } from '@mui/joy';
 import EditIcon from '@mui/icons-material/Edit';
-import ProductSelectionModal from './components/ProductSelectionModel';
+import {
+	ProductSelectionModal,
+	Product,
+} from './components/ProductSelectionModel';
 
 const AddProducts = () => {
-	const [products, setProducts] = useState([
-		{ id: 1, product: '', discount: '' },
-	]);
+	const [selectedIndex, setSelectedIndex] = useState<number>(0);
 	const [productModelVisible, setProductModelVisible] =
 		useState<boolean>(false);
+
+	const emptyProduct: Product = {
+		id: '',
+		title: '',
+		color: '',
+		size: '',
+		price: 0,
+		available: 0,
+		image: undefined,
+		variants: [],
+		checked: false,
+	};
+
+	const [productMap, setProductMap] = useState<Map<number, Product>>(() => {
+		const initialMap = new Map<number, Product>();
+		initialMap.set(0, emptyProduct);
+		return initialMap;
+	});
+
+	const addToProductMap = (key: number, product: Product) => {
+		setProductMap((prevMap) => {
+			const newMap = new Map(prevMap);
+			newMap.set(key, product);
+			return newMap;
+		});
+	};
+
 	const [showDiscountUI, setShowDiscountUI] = useState(
-		Array(products.length).fill(false)
+		Array(Array.from(productMap).length).fill(false)
 	);
 
 	const handleAddProduct = () => {
-		setProducts([
-			...products,
-			{ id: products.length + 1, product: '', discount: '' },
-		]);
 		setShowDiscountUI([...showDiscountUI, false]);
+		const length = Array.from(productMap).length;
+		addToProductMap(length, emptyProduct);
 	};
-
-	// const handleInputChange = (index: number, field: string, value: string) => {
-	// 	const updatedProducts = [...products];
-	// 	updatedProducts[index][field] = value;
-	// 	setProducts(updatedProducts);
-	// };
 
 	return (
 		<Box sx={{ padding: 4, maxWidth: 600, margin: 'auto' }}>
@@ -53,76 +73,16 @@ const AddProducts = () => {
 				<Typography level="title-md">Discount</Typography>
 			</Grid>
 
-			{products.map((item, index) => (
-				<Grid key={item.id} sx={{ marginBottom: 1 }}>
-					<Grid
-						display={'flex'}
-						direction={'row'}
-						alignItems={'center'}
-						justifyContent="space-between"
-						gap={1}
-					>
-						<Button
-							sx={{ p: 0.5 }}
-							aria-label="Reorder"
-							variant="plain"
-						>
-							<Typography>::</Typography>
-						</Button>
-						<Typography
-							level="body-md"
-							textColor={'background.level3'}
-						>
-							{index + 1}
-						</Typography>
-						<Input
-							placeholder="Select Product"
-							value={item.product}
-							sx={{
-								minWidth: 300,
-								'--Input-focusedThickness': '0px',
-							}}
-							endDecorator={
-								<IconButton
-									onClick={() => setProductModelVisible(true)}
-								>
-									<EditIcon />
-								</IconButton>
-							}
-						/>
-						<Grid container maxWidth={180}>
-							{showDiscountUI[index] ? (
-								<Grid
-									display="flex"
-									gap={1}
-									sx={{ width: '100%' }}
-								>
-									<Input placeholder="Discount" fullWidth />
-									<Select sx={{ minWidth: 102 }}>
-										<Option value="20">Flat Off</Option>
-										<Option value="30">% Off</Option>
-									</Select>
-								</Grid>
-							) : (
-								<Button
-									variant="solid"
-									sx={{ p: 2, maxHeight: 10, minWidth: 180 }}
-									onClick={() => {
-										const updatedShowDiscountUI = [
-											...showDiscountUI,
-										];
-										updatedShowDiscountUI[index] =
-											!updatedShowDiscountUI[index];
-										setShowDiscountUI(
-											updatedShowDiscountUI
-										);
-									}}
-								>
-									Add Discount
-								</Button>
-							)}
-						</Grid>
-					</Grid>
+			{Array.from(productMap.entries()).map(([key, item], index) => (
+				<Grid key={key} sx={{ marginBottom: 1 }}>
+					<ProductItem
+						index={index}
+						item={item}
+						setProductModelVisible={setProductModelVisible}
+						setSelectedIndex={setSelectedIndex}
+						showDiscountUI={showDiscountUI}
+						setShowDiscountUI={setShowDiscountUI}
+					/>
 				</Grid>
 			))}
 			<Box
@@ -139,9 +99,87 @@ const AddProducts = () => {
 			<ProductSelectionModal
 				productModelVisible={productModelVisible}
 				setProductModelVisible={setProductModelVisible}
+				selectedIndex={selectedIndex}
+				addToProductMap={addToProductMap}
 			/>
 		</Box>
 	);
 };
 
+interface ProductItemProps {
+	index: number;
+	item: Product;
+	setProductModelVisible: React.Dispatch<React.SetStateAction<boolean>>;
+	setSelectedIndex: React.Dispatch<React.SetStateAction<number>>;
+	showDiscountUI: boolean[];
+	setShowDiscountUI: React.Dispatch<React.SetStateAction<boolean[]>>;
+}
+
+const ProductItem: React.FC<ProductItemProps> = ({
+	index,
+	item,
+	setProductModelVisible,
+	setSelectedIndex,
+	showDiscountUI,
+	setShowDiscountUI,
+}) => {
+	return (
+		<Grid
+			display={'flex'}
+			direction={'row'}
+			alignItems={'center'}
+			justifyContent="space-between"
+			gap={1}
+		>
+			<Button sx={{ p: 0.5 }} aria-label="Reorder" variant="plain">
+				<Typography>::</Typography>
+			</Button>
+			<Typography level="body-md" textColor={'background.level3'}>
+				{index + 1}
+			</Typography>
+			<Input
+				placeholder="Select Product"
+				value={item.title}
+				sx={{
+					minWidth: 300,
+					'--Input-focusedThickness': '0px',
+				}}
+				endDecorator={
+					<IconButton
+						onClick={() => {
+							setProductModelVisible(true);
+							setSelectedIndex(index);
+						}}
+					>
+						<EditIcon />
+					</IconButton>
+				}
+			/>
+			<Grid container maxWidth={180}>
+				{showDiscountUI[index] ? (
+					<Grid display="flex" gap={1} sx={{ width: '100%' }}>
+						<Input placeholder="Discount" fullWidth />
+						<Select sx={{ minWidth: 102 }}>
+							<Option value="20">Flat Off</Option>
+							<Option value="30">% Off</Option>
+						</Select>
+					</Grid>
+				) : (
+					<Button
+						variant="solid"
+						sx={{ p: 2, maxHeight: 10, minWidth: 180 }}
+						onClick={() => {
+							const updatedShowDiscountUI = [...showDiscountUI];
+							updatedShowDiscountUI[index] =
+								!updatedShowDiscountUI[index];
+							setShowDiscountUI(updatedShowDiscountUI);
+						}}
+					>
+						Add Discount
+					</Button>
+				)}
+			</Grid>
+		</Grid>
+	);
+};
 export default AddProducts;

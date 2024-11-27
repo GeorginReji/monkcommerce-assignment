@@ -18,7 +18,7 @@ import {
 import { getProductsData } from '../api/FetchProductsAPI';
 import { Search } from '@mui/icons-material';
 
-interface Product {
+export interface Product {
 	id: string;
 	title: string;
 	color: string;
@@ -31,22 +31,26 @@ interface Product {
 
 	checked: string | boolean;
 }
-interface Variant {
+type Variant = {
 	id: string;
 	productId: string;
 	title: string;
 	price: number;
 	checked: boolean;
-}
+};
 
 interface ProductSelectionModalProps {
 	productModelVisible: boolean;
 	setProductModelVisible: React.Dispatch<React.SetStateAction<boolean>>;
+	selectedIndex: number;
+	addToProductMap: (key: number, value: Product) => void;
 }
 
-const ProductSelectionModal: React.FC<ProductSelectionModalProps> = ({
+export const ProductSelectionModal: React.FC<ProductSelectionModalProps> = ({
 	productModelVisible,
 	setProductModelVisible,
+	selectedIndex,
+	addToProductMap,
 }) => {
 	const [products, setProducts] = useState<Product[]>([]);
 	const [page, setPage] = useState(1);
@@ -57,20 +61,20 @@ const ProductSelectionModal: React.FC<ProductSelectionModalProps> = ({
 	const lastProductElementRef = useRef<HTMLDivElement>(null);
 
 	const handleProductCheckChange = (
+		product: Product,
 		productIndex: number,
 		checked: boolean
 	) => {
 		const updatedProducts = [...products];
-		const currentProduct = updatedProducts[productIndex];
 
 		// Update all variants of this product
-		const updatedVariants = currentProduct.variants.map((variant) => ({
+		const updatedVariants = product.variants.map((variant) => ({
 			...variant,
 			checked,
 		}));
 
 		updatedProducts[productIndex] = {
-			...currentProduct,
+			...product,
 			checked: checked,
 			variants: updatedVariants,
 		};
@@ -114,9 +118,17 @@ const ProductSelectionModal: React.FC<ProductSelectionModalProps> = ({
 		setProducts(updatedProducts);
 	};
 
-	// const handleAdd = () => {
-	// 	onAdd(selectedProducts);
-	// };
+	const handleAddProduct = () => {
+		const checkedProducts = products.filter((item) => item.checked);
+		let key = selectedIndex;
+		checkedProducts.forEach((item, index) =>
+			index === 0
+				? addToProductMap(key, item)
+				: addToProductMap(++key, item)
+		);
+		setProductModelVisible(false);
+	};
+
 	useEffect(() => {
 		if (productModelVisible) {
 			if (!hasMore || isLoading) return;
@@ -231,6 +243,7 @@ const ProductSelectionModal: React.FC<ProductSelectionModalProps> = ({
 													}
 													onChange={(e) =>
 														handleProductCheckChange(
+															product,
 															productIndex,
 															e.target.checked
 														)
@@ -335,7 +348,7 @@ const ProductSelectionModal: React.FC<ProductSelectionModalProps> = ({
 					<Button
 						variant="solid"
 						color="primary"
-						onClick={() => setProductModelVisible(false)}
+						onClick={handleAddProduct}
 					>
 						Add
 					</Button>
@@ -353,8 +366,6 @@ const ProductSelectionModal: React.FC<ProductSelectionModalProps> = ({
 };
 
 interface VariantRowProps {
-	id: string;
-	productId: string;
 	title: string;
 	quantity: number;
 	price: number;
@@ -362,8 +373,6 @@ interface VariantRowProps {
 	onCheckChange: (checked: boolean) => void;
 }
 const VariantRow: React.FC<VariantRowProps> = ({
-	id,
-	productId,
 	title,
 	quantity = 0,
 	price,
@@ -393,5 +402,3 @@ const VariantRow: React.FC<VariantRowProps> = ({
 		</Stack>
 	);
 };
-
-export default ProductSelectionModal;
