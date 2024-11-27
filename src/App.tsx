@@ -8,14 +8,18 @@ import {
 	IconButton,
 	Select,
 	Option,
+	Accordion,
+	AccordionSummary,
+	AccordionDetails,
 } from '@mui/joy';
 import EditIcon from '@mui/icons-material/Edit';
 import {
 	ProductSelectionModal,
 	Product,
+	Variant,
 } from './components/ProductSelectionModel';
 
-const AddProducts = () => {
+export const AddProducts = () => {
 	const [selectedIndex, setSelectedIndex] = useState<number>(0);
 	const [productModelVisible, setProductModelVisible] =
 		useState<boolean>(false);
@@ -109,8 +113,8 @@ const AddProducts = () => {
 interface ProductItemProps {
 	index: number;
 	item: Product;
-	setProductModelVisible: React.Dispatch<React.SetStateAction<boolean>>;
-	setSelectedIndex: React.Dispatch<React.SetStateAction<number>>;
+	setProductModelVisible?: React.Dispatch<React.SetStateAction<boolean>>;
+	setSelectedIndex?: React.Dispatch<React.SetStateAction<number>>;
 	showDiscountUI: boolean[];
 	setShowDiscountUI: React.Dispatch<React.SetStateAction<boolean[]>>;
 }
@@ -124,62 +128,173 @@ const ProductItem: React.FC<ProductItemProps> = ({
 	setShowDiscountUI,
 }) => {
 	return (
-		<Grid
-			display={'flex'}
-			direction={'row'}
-			alignItems={'center'}
-			justifyContent="space-between"
-			gap={1}
-		>
-			<Button sx={{ p: 0.5 }} aria-label="Reorder" variant="plain">
-				<Typography>::</Typography>
-			</Button>
-			<Typography level="body-md" textColor={'background.level3'}>
-				{index + 1}
-			</Typography>
-			<Input
-				placeholder="Select Product"
-				value={item.title}
-				sx={{
-					minWidth: 300,
-					'--Input-focusedThickness': '0px',
-				}}
-				endDecorator={
-					<IconButton
-						onClick={() => {
-							setProductModelVisible(true);
-							setSelectedIndex(index);
-						}}
-					>
-						<EditIcon />
-					</IconButton>
-				}
-			/>
-			<Grid container maxWidth={180}>
-				{showDiscountUI[index] ? (
-					<Grid display="flex" gap={1} sx={{ width: '100%' }}>
-						<Input placeholder="Discount" fullWidth />
-						<Select sx={{ minWidth: 102 }}>
-							<Option value="20">Flat Off</Option>
-							<Option value="30">% Off</Option>
-						</Select>
-					</Grid>
-				) : (
-					<Button
-						variant="solid"
-						sx={{ p: 2, maxHeight: 10, minWidth: 180 }}
-						onClick={() => {
-							const updatedShowDiscountUI = [...showDiscountUI];
-							updatedShowDiscountUI[index] =
-								!updatedShowDiscountUI[index];
-							setShowDiscountUI(updatedShowDiscountUI);
-						}}
-					>
-						Add Discount
-					</Button>
-				)}
+		<>
+			<Grid
+				display={'flex'}
+				direction={'row'}
+				alignItems={'center'}
+				justifyContent="space-between"
+				gap={1}
+			>
+				<Button sx={{ p: 0.5 }} aria-label="Reorder" variant="plain">
+					<Typography>::</Typography>
+				</Button>
+				<Typography level="body-md" textColor={'background.level3'}>
+					{index + 1}
+				</Typography>
+				<Input
+					placeholder="Select Product"
+					value={item.title}
+					sx={{
+						minWidth: 300,
+						'--Input-focusedThickness': '0px',
+					}}
+					endDecorator={
+						setProductModelVisible && setSelectedIndex ? (
+							<IconButton
+								onClick={() => {
+									setProductModelVisible(true);
+									setSelectedIndex(index);
+								}}
+							>
+								<EditIcon />
+							</IconButton>
+						) : null
+					}
+				/>
+				<Grid container maxWidth={180}>
+					{showDiscountUI && showDiscountUI[index] ? (
+						<Grid display="flex" gap={1} sx={{ width: '100%' }}>
+							<Input placeholder="Discount" fullWidth />
+							<Select sx={{ minWidth: 102 }}>
+								<Option value="20">Flat Off</Option>
+								<Option value="30">% Off</Option>
+							</Select>
+						</Grid>
+					) : (
+						<Button
+							variant="solid"
+							sx={{ p: 2, maxHeight: 10, minWidth: 180 }}
+							onClick={() => {
+								const updatedShowDiscountUI = [
+									...showDiscountUI,
+								];
+								updatedShowDiscountUI[index] =
+									!updatedShowDiscountUI[index];
+								setShowDiscountUI(updatedShowDiscountUI);
+							}}
+						>
+							Add Discount
+						</Button>
+					)}
+				</Grid>
 			</Grid>
-		</Grid>
+			{item.variants?.length > 0 && (
+				<ProductVariantsAccordion
+					variants={item.variants.filter(
+						(variant) => variant.checked
+					)}
+					showDiscountUI={showDiscountUI}
+					setShowDiscountUI={setShowDiscountUI}
+				/>
+			)}
+		</>
 	);
 };
-export default AddProducts;
+
+interface ProductVariantsAccordionProps {
+	variants: Variant[];
+	showDiscountUI: boolean[];
+	setShowDiscountUI: React.Dispatch<React.SetStateAction<boolean[]>>;
+}
+
+const ProductVariantsAccordion: React.FC<ProductVariantsAccordionProps> = ({
+	showDiscountUI,
+	setShowDiscountUI,
+	variants,
+}) => {
+	const [isExpanded, setIsExpanded] = useState<boolean>(false);
+	return (
+		<Box ml={6}>
+			<Accordion expanded={isExpanded}>
+				<AccordionSummary
+					sx={{ display: 'block', ml: '355px' }}
+					onClick={() => setIsExpanded(!isExpanded)}
+				>
+					{isExpanded ? (
+						<Typography level="body-sm">Hide variants</Typography>
+					) : (
+						<Typography level="body-sm">Show variants</Typography>
+					)}
+				</AccordionSummary>
+				<AccordionDetails>
+					{variants.map((variant, index) => (
+						<Grid
+							display={'flex'}
+							direction={'row'}
+							alignItems={'center'}
+							justifyContent="space-between"
+							mb={0.5}
+						>
+							<Button
+								sx={{ p: 0.5 }}
+								aria-label="Reorder"
+								variant="plain"
+							>
+								<Typography>::</Typography>
+							</Button>
+							<Input
+								placeholder="Select Product"
+								value={variant.title}
+								size="sm"
+								sx={{
+									minWidth: 300,
+									'--Input-focusedThickness': '0px',
+								}}
+							/>
+							<Grid maxWidth={150}>
+								{showDiscountUI[index] ? (
+									<Grid
+										display="flex"
+										gap={1}
+										sx={{ width: '100%' }}
+									>
+										<Input
+											placeholder="Discount"
+											fullWidth
+											size="sm"
+										/>
+										<Select size="sm" sx={{ minWidth: 90 }}>
+											<Option value="20">Flat Off</Option>
+											<Option value="30">% Off</Option>
+										</Select>
+									</Grid>
+								) : (
+									<Button
+										variant="solid"
+										sx={{
+											maxHeight: 6,
+											minWidth: 120,
+										}}
+										onClick={() => {
+											const updatedShowDiscountUI = [
+												...showDiscountUI,
+											];
+											updatedShowDiscountUI[index] =
+												!updatedShowDiscountUI[index];
+											setShowDiscountUI(
+												updatedShowDiscountUI
+											);
+										}}
+									>
+										Add Discount
+									</Button>
+								)}
+							</Grid>
+						</Grid>
+					))}
+				</AccordionDetails>
+			</Accordion>
+		</Box>
+	);
+};

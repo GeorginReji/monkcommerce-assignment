@@ -31,7 +31,7 @@ export interface Product {
 
 	checked: string | boolean;
 }
-type Variant = {
+export type Variant = {
 	id: string;
 	productId: string;
 	title: string;
