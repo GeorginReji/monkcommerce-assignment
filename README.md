@@ -4,13 +4,13 @@ React + vite + Typescript + Joy UI
 
 ## Product List component
 
-![Product list image](./src/assets/images/image-1.png)
+![Product list image]("./src/assets/images/image-1.png")
 
 -   Product list component with dynamic product add button.
 
 ## Product picker Component
 
-![Product picker image](./src/assets/images/image-2.png)
+![Product picker image]("./src/assets/images/image-2.png")
 
 -   Listing products from the API.
 -   Infinite scroll implemented.
@@ -19,7 +19,7 @@ React + vite + Typescript + Joy UI
 
 ## Add Product button
 
-![Add button image](./src/assets/images/image-3.png)
+![Add button image]("./src/assets/images/image-3.png")
 
 -   Add empty product to end of list.
 -   Existing products can be reordered with drag and drop.
