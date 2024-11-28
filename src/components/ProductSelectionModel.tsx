@@ -173,10 +173,9 @@ export const ProductSelectionModal: React.FC<ProductSelectionModalProps> = ({
 				}
 			},
 			{
-				// Optional configuration
-				root: null, // viewport
+				root: null,
 				rootMargin: '0px',
-				threshold: 1.0, // fully visible
+				threshold: 1.0,
 			}
 		);
 

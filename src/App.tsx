@@ -13,6 +13,7 @@ import {
 	AccordionDetails,
 } from '@mui/joy';
 import EditIcon from '@mui/icons-material/Edit';
+import ClearIcon from '@mui/icons-material/Clear';
 import {
 	ProductSelectionModal,
 	Product,
@@ -50,6 +51,24 @@ export const AddProducts = () => {
 		});
 	};
 
+	const removeFromProductMap = (key: number) => {
+		setProductMap((prevMap) => {
+			const newMap = new Map(prevMap);
+			newMap.delete(key);
+			return newMap;
+		});
+	};
+
+	const handleRemoveVariant = (key: number, variantId: string) => {
+		const product = productMap.get(key);
+		console.log('remove parems', key, variantId, product);
+		if (product) {
+			product.variants = product.variants.filter(
+				(item) => item.id !== variantId
+			);
+			addToProductMap(key, product);
+		}
+	};
 	const [showDiscountUI, setShowDiscountUI] = useState(
 		Array(Array.from(productMap).length).fill(false)
 	);
@@ -80,12 +99,15 @@ export const AddProducts = () => {
 			{Array.from(productMap.entries()).map(([key, item], index) => (
 				<Grid key={key} sx={{ marginBottom: 1 }}>
 					<ProductItem
+						productIndex={key}
 						index={index}
 						item={item}
 						setProductModelVisible={setProductModelVisible}
 						setSelectedIndex={setSelectedIndex}
 						showDiscountUI={showDiscountUI}
 						setShowDiscountUI={setShowDiscountUI}
+						removeFromProductMap={removeFromProductMap}
+						handleRemoveVariant={handleRemoveVariant}
 					/>
 				</Grid>
 			))}
@@ -111,21 +133,27 @@ export const AddProducts = () => {
 };
 
 interface ProductItemProps {
+	productIndex: number;
 	index: number;
 	item: Product;
 	setProductModelVisible?: React.Dispatch<React.SetStateAction<boolean>>;
 	setSelectedIndex?: React.Dispatch<React.SetStateAction<number>>;
 	showDiscountUI: boolean[];
 	setShowDiscountUI: React.Dispatch<React.SetStateAction<boolean[]>>;
+	removeFromProductMap: (key: number) => void;
+	handleRemoveVariant: (key: number, variantId: string) => void;
 }
 
 const ProductItem: React.FC<ProductItemProps> = ({
+	productIndex,
 	index,
 	item,
 	setProductModelVisible,
 	setSelectedIndex,
 	showDiscountUI,
 	setShowDiscountUI,
+	removeFromProductMap,
+	handleRemoveVariant,
 }) => {
 	return (
 		<>
@@ -146,7 +174,7 @@ const ProductItem: React.FC<ProductItemProps> = ({
 					placeholder="Select Product"
 					value={item.title}
 					sx={{
-						minWidth: 300,
+						minWidth: 250,
 						'--Input-focusedThickness': '0px',
 					}}
 					endDecorator={
@@ -162,11 +190,11 @@ const ProductItem: React.FC<ProductItemProps> = ({
 						) : null
 					}
 				/>
-				<Grid container maxWidth={180}>
+				<Grid display={'flex'} direction={'row'} maxWidth={200}>
 					{showDiscountUI && showDiscountUI[index] ? (
 						<Grid display="flex" gap={1} sx={{ width: '100%' }}>
-							<Input placeholder="Discount" fullWidth />
-							<Select sx={{ minWidth: 102 }}>
+							<Input placeholder="Discount" />
+							<Select sx={{ minWidth: 100 }}>
 								<Option value="20">Flat Off</Option>
 								<Option value="30">% Off</Option>
 							</Select>
@@ -187,15 +215,20 @@ const ProductItem: React.FC<ProductItemProps> = ({
 							Add Discount
 						</Button>
 					)}
+					<IconButton onClick={() => removeFromProductMap(index)}>
+						<ClearIcon />
+					</IconButton>
 				</Grid>
 			</Grid>
 			{item.variants?.length > 0 && (
 				<ProductVariantsAccordion
+					productIndex={productIndex}
 					variants={item.variants.filter(
 						(variant) => variant.checked
 					)}
 					showDiscountUI={showDiscountUI}
 					setShowDiscountUI={setShowDiscountUI}
+					handleRemoveVariant={handleRemoveVariant}
 				/>
 			)}
 		</>
@@ -203,19 +236,23 @@ const ProductItem: React.FC<ProductItemProps> = ({
 };
 
 interface ProductVariantsAccordionProps {
+	productIndex: number;
 	variants: Variant[];
 	showDiscountUI: boolean[];
 	setShowDiscountUI: React.Dispatch<React.SetStateAction<boolean[]>>;
+	handleRemoveVariant: (key: number, variantId: string) => void;
 }
 
 const ProductVariantsAccordion: React.FC<ProductVariantsAccordionProps> = ({
+	productIndex,
 	showDiscountUI,
 	setShowDiscountUI,
 	variants,
+	handleRemoveVariant,
 }) => {
 	const [isExpanded, setIsExpanded] = useState<boolean>(false);
 	return (
-		<Box ml={6}>
+		<Box ml={3}>
 			<Accordion expanded={isExpanded}>
 				<AccordionSummary
 					sx={{ display: 'block', ml: '355px' }}
@@ -230,11 +267,12 @@ const ProductVariantsAccordion: React.FC<ProductVariantsAccordionProps> = ({
 				<AccordionDetails>
 					{variants.map((variant, index) => (
 						<Grid
+							key={variant.id}
 							display={'flex'}
 							direction={'row'}
 							alignItems={'center'}
-							justifyContent="space-between"
 							mb={0.5}
+							gap={1}
 						>
 							<Button
 								sx={{ p: 0.5 }}
@@ -252,7 +290,13 @@ const ProductVariantsAccordion: React.FC<ProductVariantsAccordionProps> = ({
 									'--Input-focusedThickness': '0px',
 								}}
 							/>
-							<Grid maxWidth={150}>
+							<Grid
+								maxWidth={180}
+								display={'flex'}
+								direction={'row'}
+								alignItems={'center'}
+								gap={1}
+							>
 								{showDiscountUI[index] ? (
 									<Grid
 										display="flex"
@@ -261,7 +305,7 @@ const ProductVariantsAccordion: React.FC<ProductVariantsAccordionProps> = ({
 									>
 										<Input
 											placeholder="Discount"
-											fullWidth
+											sx={{ minWidth: '50px' }}
 											size="sm"
 										/>
 										<Select size="sm" sx={{ minWidth: 90 }}>
@@ -291,6 +335,17 @@ const ProductVariantsAccordion: React.FC<ProductVariantsAccordionProps> = ({
 									</Button>
 								)}
 							</Grid>
+							<IconButton
+								sx={{ ml: 1 }}
+								onClick={() =>
+									handleRemoveVariant(
+										productIndex,
+										variant.id
+									)
+								}
+							>
+								<ClearIcon />
+							</IconButton>
 						</Grid>
 					))}
 				</AccordionDetails>
