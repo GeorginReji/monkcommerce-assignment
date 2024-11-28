@@ -169,7 +169,6 @@ const ProductItem: React.FC<ProductItemProps> = React.memo(
 
 		// Drag and drop handlers
 		const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
-			// Set the dragged item's index as data
 			e.dataTransfer?.setData('text/plain', productIndex.toString());
 			setIsDragging(true);
 
@@ -231,21 +230,15 @@ const ProductItem: React.FC<ProductItemProps> = React.memo(
 		const handleVariantReorder = useCallback(
 			(productIndex: number, reorderedVariants: Variant[]) => {
 				setProductMap((prevMap) => {
-					// Create a new map to avoid direct mutation
 					const newMap = new Map(prevMap);
-
-					// Get the current product
 					const product = newMap.get(productIndex);
 
 					// Update the product's variants if the product exists
 					if (product) {
-						// Create a new product object with updated variants
 						const updatedProduct = {
 							...product,
 							variants: reorderedVariants,
 						};
-
-						// Set the updated product in the map
 						newMap.set(productIndex, updatedProduct);
 					}
 
@@ -377,7 +370,6 @@ const ProductVariantsAccordion: React.FC<ProductVariantsAccordionProps> = ({
 	const [draggedVariant, setDraggedVariant] = useState<number | null>(null);
 	const [isExpanded, setIsExpanded] = useState<boolean>(false);
 
-	// Sync local variants with prop variants
 	useEffect(() => {
 		setLocalVariants(variants);
 	}, [variants]);
@@ -397,7 +389,7 @@ const ProductVariantsAccordion: React.FC<ProductVariantsAccordionProps> = ({
 	};
 
 	const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-		e.preventDefault(); // Necessary to allow dropping
+		e.preventDefault();
 	};
 
 	const handleDrop = (
@@ -408,19 +400,16 @@ const ProductVariantsAccordion: React.FC<ProductVariantsAccordionProps> = ({
 
 		if (draggedVariant === null || draggedVariant === targetIndex) return;
 
-		// Create a copy of variants to manipulate
 		const updatedVariants = [...localVariants];
 
 		// Remove the dragged variant
 		const [removedVariant] = updatedVariants.splice(draggedVariant, 1);
-
-		// Insert at the new position
 		updatedVariants.splice(targetIndex, 0, removedVariant);
 
 		// Update local state
 		setLocalVariants(updatedVariants);
 
-		// Call onVariantReorder if provided
+		// Update parent state
 		if (onVariantReorder) {
 			onVariantReorder(updatedVariants);
 		}
