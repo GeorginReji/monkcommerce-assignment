@@ -1,50 +1,45 @@
-# React + TypeScript + Vite
+# Monk Commerce Task
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + vite + Typescript + Joy UI
 
-Currently, two official plugins are available:
+## Product List component
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+![Product list image](./src/assets/images/image-1.png)
 
-## Expanding the ESLint configuration
+-   Product list component with dynamic product add button.
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+## Product picker Component
 
-- Configure the top-level `parserOptions` property like this:
+![Product picker image](./src/assets/images/image-2.png)
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+-   Listing products from the API.
+-   Infinite scroll implemented.
+-   check box for product selection.
+-   Specific variant selection.
+
+## Add Product button
+
+![Add button image](./src/assets/images/image-3.png)
+
+-   Add empty product to end of list.
+-   Existing products can be reordered with drag and drop.
+-   Variants can be reordered with drag and drop.
+-   Products can be updated.
+
+## How to run
+
+Add the key to the API key to the .env file
+Node version 22
+React 18
+
+install packages
+
+```
+npm install
 ```
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+run locally
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
-
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
+```
+npm run dev
 ```
