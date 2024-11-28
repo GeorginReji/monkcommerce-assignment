@@ -100,6 +100,7 @@ export const AddProducts = () => {
 				<Grid key={key} sx={{ marginBottom: 1 }}>
 					<ProductItem
 						productIndex={key}
+						productMap={productMap}
 						index={index}
 						item={item}
 						setProductModelVisible={setProductModelVisible}
@@ -134,6 +135,7 @@ export const AddProducts = () => {
 
 interface ProductItemProps {
 	productIndex: number;
+	productMap: Map<number, Product>;
 	index: number;
 	item: Product;
 	setProductModelVisible?: React.Dispatch<React.SetStateAction<boolean>>;
@@ -146,6 +148,7 @@ interface ProductItemProps {
 
 const ProductItem: React.FC<ProductItemProps> = ({
 	productIndex,
+	productMap,
 	index,
 	item,
 	setProductModelVisible,
@@ -215,9 +218,11 @@ const ProductItem: React.FC<ProductItemProps> = ({
 							Add Discount
 						</Button>
 					)}
-					<IconButton onClick={() => removeFromProductMap(index)}>
-						<ClearIcon />
-					</IconButton>
+					{Array.from(productMap).length > 1 && (
+						<IconButton onClick={() => removeFromProductMap(index)}>
+							<ClearIcon />
+						</IconButton>
+					)}
 				</Grid>
 			</Grid>
 			{item.variants?.length > 0 && (
