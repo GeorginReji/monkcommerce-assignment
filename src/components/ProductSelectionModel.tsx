@@ -132,7 +132,7 @@ export const ProductSelectionModal: React.FC<ProductSelectionModalProps> = ({
 
 	useEffect(() => {
 		if (productModelVisible) {
-			if (!hasMore || isLoading) return;
+			if ((!hasMore && search) || isLoading) return;
 			const fetchProductData = async () => {
 				try {
 					setIsLoading(true);
@@ -201,7 +201,10 @@ export const ProductSelectionModal: React.FC<ProductSelectionModalProps> = ({
 	return (
 		<Modal
 			open={productModelVisible}
-			onClose={() => setProductModelVisible(false)}
+			onClose={() => {
+				setProductModelVisible(false);
+				setSearch('');
+			}}
 		>
 			<ModalDialog>
 				<DialogTitle>Search Products</DialogTitle>
@@ -366,7 +369,10 @@ export const ProductSelectionModal: React.FC<ProductSelectionModalProps> = ({
 					<Button
 						variant="outlined"
 						color="neutral"
-						onClick={() => setProductModelVisible(false)}
+						onClick={() => {
+							setProductModelVisible(false);
+							setSearch('');
+						}}
 					>
 						Cancel
 					</Button>
