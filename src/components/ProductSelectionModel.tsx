@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, KeyboardEvent } from 'react';
 import {
 	Modal,
 	Checkbox,
@@ -56,6 +56,7 @@ export const ProductSelectionModal: React.FC<ProductSelectionModalProps> = ({
 	const [page, setPage] = useState(1);
 	const [hasMore, setHasMore] = useState(true);
 	const [isLoading, setIsLoading] = useState(false);
+	const [search, setSearch] = useState<string>('');
 
 	// Ref for the last product element
 	const lastProductElementRef = useRef<HTMLDivElement>(null);
@@ -136,6 +137,7 @@ export const ProductSelectionModal: React.FC<ProductSelectionModalProps> = ({
 				try {
 					setIsLoading(true);
 					const productData = await getProductsData({
+						search,
 						page,
 						limit: 10,
 					});
@@ -146,11 +148,15 @@ export const ProductSelectionModal: React.FC<ProductSelectionModalProps> = ({
 					}
 
 					// Append new products to existing list
-					setProducts((prevProducts) =>
-						page === 1
-							? productData
-							: [...prevProducts, ...productData]
-					);
+					if (search) {
+						setProducts(productData);
+					} else {
+						setProducts((prevProducts) =>
+							page === 1
+								? productData
+								: [...prevProducts, ...productData]
+						);
+					}
 				} catch (error) {
 					console.error('Error fetching product data:', error);
 				} finally {
@@ -159,7 +165,7 @@ export const ProductSelectionModal: React.FC<ProductSelectionModalProps> = ({
 			};
 			fetchProductData();
 		}
-	}, [productModelVisible, page]);
+	}, [productModelVisible, page, search]);
 
 	// Intersection Observer setup
 	useEffect(() => {
@@ -201,7 +207,13 @@ export const ProductSelectionModal: React.FC<ProductSelectionModalProps> = ({
 				<DialogTitle>Search Products</DialogTitle>
 				<Input
 					startDecorator={<Search />}
-					placeholder="Search product"
+					placeholder="Press 'Enter ↵' to search product"
+					onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
+						if (e.key === 'Enter') {
+							const target = e.target as HTMLInputElement;
+							setSearch(target.value);
+						}
+					}}
 				/>
 				{
 					<Sheet
