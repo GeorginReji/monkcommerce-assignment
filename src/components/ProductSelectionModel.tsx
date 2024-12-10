@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, KeyboardEvent } from 'react';
+import React, { useRef, useState, KeyboardEvent, useCallback } from 'react';
 import {
 	Modal,
 	Checkbox,
@@ -17,6 +17,7 @@ import {
 } from '@mui/joy';
 import { getProductsData } from '../api/FetchProductsAPI';
 import { Search } from '@mui/icons-material';
+import { useQuery } from '../hooks/useQuery';
 
 export interface Product {
 	id: string;
@@ -52,14 +53,49 @@ export const ProductSelectionModal: React.FC<ProductSelectionModalProps> = ({
 	selectedIndex,
 	addToProductMap,
 }) => {
-	const [products, setProducts] = useState<Product[]>([]);
 	const [page, setPage] = useState(1);
-	const [hasMore, setHasMore] = useState(true);
-	const [isLoading, setIsLoading] = useState(false);
 	const [search, setSearch] = useState<string>('');
 
-	// Ref for the last product element
-	const lastProductElementRef = useRef<HTMLDivElement>(null);
+	const {
+		data: products,
+		setData: setProducts,
+		loading,
+		hasError,
+		error,
+		hasMore,
+	} = useQuery<Product, { page: number; search: string; limit: number }>({
+		apiCall: getProductsData,
+		params: { page, search, limit: 10 },
+	});
+
+	// Infinite scroll with intersection observer.
+	const observer = useRef<IntersectionObserver | null>(null);
+
+	const lastProductElementRef = useCallback(
+		(node: HTMLDivElement | null): void => {
+			if (loading || !hasMore) return;
+
+			if (observer.current) {
+				observer.current.disconnect();
+			}
+
+			observer.current = new IntersectionObserver(
+				(entries: IntersectionObserverEntry[]) => {
+					if (entries[0].isIntersecting && hasMore && !loading) {
+						// console.log('Visible');
+						setPage(
+							(previousPageNumb: number) => previousPageNumb + 1
+						);
+					}
+				}
+			);
+
+			if (node) {
+				observer.current.observe(node);
+			}
+		},
+		[hasMore, loading]
+	);
 
 	const handleProductCheckChange = (
 		product: Product,
@@ -130,81 +166,10 @@ export const ProductSelectionModal: React.FC<ProductSelectionModalProps> = ({
 		setProductModelVisible(false);
 	};
 
-	useEffect(() => {
-		if (productModelVisible) {
-			if ((!hasMore && search) || isLoading) return;
-			const fetchProductData = async () => {
-				try {
-					setIsLoading(true);
-					const productData = await getProductsData({
-						search,
-						page,
-						limit: 10,
-					});
-
-					// If new data is less than limit, we've reached the end
-					if (productData.length < 10) {
-						setHasMore(false);
-					}
-
-					// Append new products to existing list
-					if (search) {
-						setProducts(productData);
-					} else {
-						setProducts((prevProducts) =>
-							page === 1
-								? productData
-								: [...prevProducts, ...productData]
-						);
-					}
-				} catch (error) {
-					console.error('Error fetching product data:', error);
-				} finally {
-					setIsLoading(false);
-				}
-			};
-			fetchProductData();
-		}
-	}, [productModelVisible, page, search]);
-
-	// Intersection Observer setup
-	useEffect(() => {
-		if (!productModelVisible || !hasMore || isLoading) return;
-
-		const observer = new IntersectionObserver(
-			(entries) => {
-				// If the last element is intersecting, load more products
-				if (entries[0].isIntersecting && hasMore && !isLoading) {
-					setPage((prevPage) => prevPage + 1);
-				}
-			},
-			{
-				root: null,
-				rootMargin: '0px',
-				threshold: 1.0,
-			}
-		);
-
-		// Observe the last product element
-		if (lastProductElementRef.current) {
-			observer.observe(lastProductElementRef.current);
-		}
-
-		// Cleanup
-		return () => {
-			if (lastProductElementRef.current) {
-				observer.unobserve(lastProductElementRef.current);
-			}
-		};
-	}, [products, hasMore, isLoading, productModelVisible]);
-
 	return (
 		<Modal
 			open={productModelVisible}
-			onClose={() => {
-				setProductModelVisible(false);
-				setSearch('');
-			}}
+			onClose={() => setProductModelVisible(false)}
 		>
 			<ModalDialog>
 				<DialogTitle>Search Products</DialogTitle>
@@ -214,6 +179,7 @@ export const ProductSelectionModal: React.FC<ProductSelectionModalProps> = ({
 					onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
 						if (e.key === 'Enter') {
 							const target = e.target as HTMLInputElement;
+							setPage(1);
 							setSearch(target.value);
 						}
 					}}
@@ -233,7 +199,7 @@ export const ProductSelectionModal: React.FC<ProductSelectionModalProps> = ({
 								(product: Product, productIndex: number) => (
 									<Grid
 										xs={12}
-										key={product.id}
+										key={`$productKey-${product.id}-${productIndex}`}
 										ref={
 											productIndex === products.length - 1
 												? lastProductElementRef
@@ -300,47 +266,47 @@ export const ProductSelectionModal: React.FC<ProductSelectionModalProps> = ({
 										</Grid>
 										<Divider sx={{ mt: 1 }} inset="none" />
 
-										<Grid ml={3} pt={2}>
-											{product.variants.map(
-												(
-													variant: Variant,
-													variantIndex: number
-												) => (
-													<>
-														<Grid
-															xs={12}
-															key={variant.id}
-														>
-															<VariantRow
-																quantity={99}
-																{...variant}
-																checked={
-																	variant.checked ||
-																	false
-																}
-																onCheckChange={(
+										{product.variants.map(
+											(
+												variant: Variant,
+												variantIndex: number
+											) => (
+												<React.Fragment
+													key={`variant-fragment-${variant.id}-${variantIndex}`}
+												>
+													<Grid
+														xs={12}
+														key={`variant-container-${variant.id}-${variantIndex}`}
+													>
+														<VariantRow
+															quantity={99}
+															{...variant}
+															checked={
+																variant.checked ||
+																false
+															}
+															onCheckChange={(
+																checked
+															) =>
+																handleVariantCheckChange(
+																	productIndex,
+																	variantIndex,
 																	checked
-																) =>
-																	handleVariantCheckChange(
-																		productIndex,
-																		variantIndex,
-																		checked
-																	)
-																}
-															/>
-														</Grid>
-														<Divider inset="none" />
-													</>
-												)
-											)}
-										</Grid>
+																)
+															}
+														/>
+													</Grid>
+													<Divider inset="none" />
+												</React.Fragment>
+											)
+										)}
 									</Grid>
 								)
 							)}
 						</Grid>
 					</Sheet>
 				}
-				{isLoading && (
+				{loading && (
 					<Grid xs={12} display="flex" justifyContent="center" py={2}>
 						<CircularProgress />
 					</Grid>
@@ -349,6 +315,12 @@ export const ProductSelectionModal: React.FC<ProductSelectionModalProps> = ({
 				{!hasMore && (
 					<Grid xs={12} display="flex" justifyContent="center" py={2}>
 						<Typography>No more products</Typography>
+					</Grid>
+				)}
+
+				{hasError && (
+					<Grid xs={12} display="flex" justifyContent="center" py={2}>
+						<Typography>{error}</Typography>
 					</Grid>
 				)}
 				<Box
@@ -383,6 +355,7 @@ export const ProductSelectionModal: React.FC<ProductSelectionModalProps> = ({
 };
 
 interface VariantRowProps {
+	id: string;
 	title: string;
 	quantity: number;
 	price: number;
@@ -390,6 +363,7 @@ interface VariantRowProps {
 	onCheckChange: (checked: boolean) => void;
 }
 const VariantRow: React.FC<VariantRowProps> = ({
+	id,
 	title,
 	quantity = 0,
 	price,
@@ -399,6 +373,7 @@ const VariantRow: React.FC<VariantRowProps> = ({
 	return (
 		<Stack
 			flex={1}
+			key={`variant-${id}`}
 			direction="row"
 			justifyContent="space-between"
 			columnGap={1}
