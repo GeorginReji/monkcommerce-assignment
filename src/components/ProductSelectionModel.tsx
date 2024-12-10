@@ -1,10 +1,9 @@
-import React, { useRef, useState, KeyboardEvent, useCallback } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import {
 	Modal,
 	Checkbox,
 	ModalDialog,
 	DialogTitle,
-	Input,
 	Button,
 	Box,
 	Stack,
@@ -14,10 +13,13 @@ import {
 	Grid,
 	Divider,
 	AspectRatio,
+	IconButton,
 } from '@mui/joy';
 import { getProductsData } from '../api/FetchProductsAPI';
 import { Search } from '@mui/icons-material';
+import ClearIcon from '@mui/icons-material/Clear';
 import { useQuery } from '../hooks/useQuery';
+import DebounceInput from './DebouncedInput';
 
 export interface Product {
 	id: string;
@@ -173,16 +175,26 @@ export const ProductSelectionModal: React.FC<ProductSelectionModalProps> = ({
 		>
 			<ModalDialog>
 				<DialogTitle>Search Products</DialogTitle>
-				<Input
+				<DebounceInput
 					startDecorator={<Search />}
-					placeholder="Press 'Enter ↵' to search product"
-					onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
-						if (e.key === 'Enter') {
-							const target = e.target as HTMLInputElement;
-							setPage(1);
-							setSearch(target.value);
-						}
+					placeholder="Search products..."
+					debounceTimeout={1000}
+					handleDebounce={(value: string) => {
+						setPage(1);
+						setSearch(value);
 					}}
+					endDecorator={
+						search !== '' && (
+							<IconButton
+								onClick={() => {
+									setPage(1);
+									setSearch('');
+								}}
+							>
+								<ClearIcon />
+							</IconButton>
+						)
+					}
 				/>
 				{
 					<Sheet
